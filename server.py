@@ -8,23 +8,43 @@ BUFFER_SIZE = 4096
 clients = []
 lock = threading.Lock()
 
+
 def handle_client(conn, addr):
     print(f"[+] New client connected: {addr}")
-    with conn:
-        while True:
-            try:
-                data = conn.recv(BUFFER_SIZE)
-                if not data:
-                    break
-                with lock:
-                    for c in clients:
-                        if c != conn:
-                            c.sendall(data)
-            except:
-                break
+
     with lock:
-        clients.remove(conn)
-    print(f"[-] Client disconnected: {addr}")
+        clients.append(conn)
+        if len(clients) == 2:
+            for c in clients:
+                try:
+                    c.sendall(b"[SYS]CONNECTED")
+                except:
+                    pass
+        elif len(clients) < 2:
+            try:
+                conn.sendall(b"[SYS]WAITING")
+            except:
+                pass
+
+    try:
+        while True:
+            data = conn.recv(BUFFER_SIZE)
+            if not data:
+                break
+            with lock:
+                for c in clients:
+                    if c != conn:
+                        c.sendall(data)
+    except:
+        pass
+    finally:
+        with lock:
+            if conn in clients:
+                clients.remove(conn)
+        conn.close()
+        print(f"[-] Client disconnected: {addr}")
+
+
 
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,9 +54,8 @@ def start_server():
 
     while True:
         conn, addr = server.accept()
-        with lock:
-            clients.append(conn)
         threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
+
 
 if __name__ == "__main__":
     start_server()

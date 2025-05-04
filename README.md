@@ -17,7 +17,7 @@ This project implements a secure peer-to-peer messaging system where multiple cl
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/yourusername/secure-chat.git
+git clone 
 cd secure-chat
 ```
 

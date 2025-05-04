@@ -34,6 +34,7 @@ class ChatClient:
         # Networking and crypto setup
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((self.server_ip, PORT))
+        # self.display_message("🔗 Connected to server. Secure communication ready.")
 
         self.passphrase = passphrase.encode()
         self.message_count = 0
@@ -56,6 +57,17 @@ class ChatClient:
                 data = self.sock.recv(BUFFER_SIZE)
                 if not data:
                     break
+
+                # 💡 Handle system message first
+                if data.startswith(b"[SYS]"):
+                    signal = data.decode()
+                    if signal == "[SYS]CONNECTED":
+                        self.display_message("🔐 Secure connection established. You can now chat.")
+                    elif signal == "[SYS]WAITING":
+                        self.display_message("🕓 Waiting for another client to connect...")
+                    continue
+
+                # Normal encrypted message
                 self.message_count += 1
                 self.rotate_key_if_needed()
                 decrypted, _ = decrypt_message(self.key, data)
@@ -64,6 +76,7 @@ class ChatClient:
             except Exception as e:
                 self.display_message(f"Error: {e}")
                 break
+
 
     def send_message_event(self, event):
         self.send_message()
